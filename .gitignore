@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Project artefacts
+data/
+checkpoints/
+wandb/
+*.log
+
+# Editor / IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
+anaconda_projects/
+
+# Local notebooks
+main.ipynb

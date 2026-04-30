@@ -1,0 +1,10 @@
+numpy<2
+matplotlib
+torch>=2.0
+torchvision
+timm
+fvcore
+opencv-python
+scikit-image
+Pillow
+wandb

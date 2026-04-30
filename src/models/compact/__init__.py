@@ -1,0 +1,1 @@
+from .compact_predictor import CompactPredictor
