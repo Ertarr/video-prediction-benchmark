@@ -1,42 +1,37 @@
 # Modern Video Prediction Benchmark with Compact Latent Dynamics
 
-This is a small PyTorch benchmark for future frame prediction.
-The goal was to compare a strong modern baseline, **SimVPv2**, with a
-much smaller **compact latent dynamics model** that I designed myself.
+Small PyTorch benchmark for future frame prediction. I compared SimVPv2
+(a strong modern baseline) against a compact latent dynamics model I
+designed myself, first on Moving MNIST and then on KTH Actions. Later
+I added ablations and a JEPA-style variant.
 
-I started with **Moving MNIST**, then extended the comparison to
-**KTH Actions**.
-
-The question I had in mind was simple:
-
-> how much quality can I keep if I make the prediction model much smaller
-> and faster?
+The main question I wanted to answer: how much prediction quality can
+I keep while making the model much smaller and faster?
 
 ## Main result on Moving MNIST
 
-On Moving MNIST, the compact model is much cheaper than SimVPv2:
+On the on-the-fly setup (200 epochs), the compact model is about 4-5x
+smaller than SimVPv2 (4.72M -> 0.98M params) and ~3x cheaper in FLOPs.
+It pays for this in long-horizon SSIM. The ablations later showed that
+just bumping n_layers from 2 to 3 in the encoder recovers most of the
+gap, almost for free.
 
-- **4.82x fewer parameters** (0.98M vs 4.72M)
-- **3.26x fewer FLOPs** (0.46G vs 1.50G)
-- about **4x lower CPU latency**
+| Model                          | Params | Test MSE | Test SSIM |
+|--------------------------------|--------|----------|-----------|
+| SimVPv2 (gSTA, OpenSTL)        | 4.72M  | 0.0168   | 0.84      |
+| Compact (n_layers=2, baseline) | 0.98M  | 0.0316   | 0.46      |
+| Compact (n_layers=3)           | 0.99M  | 0.0239   | 0.65      |
 
-The downside is that it gets blurrier at long horizons, which shows up
-clearly in SSIM.
-
-| Model    | Params | Test MSE (avg) | Test SSIM (avg) |
-|----------|--------|----------------|-----------------|
-| SimVPv2  | 4.72M  | 0.0215         | 0.74            |
-| Compact  | 0.98M  | 0.0316         | 0.40            |
-
-So roughly a 5x parameter reduction for about 1.5x worse MSE on average.
-Full per-step metrics and discussion are in `RESULTS.md`.
+Going from n_layers=2 to n_layers=3 only adds 0.01M params, but SSIM
+jumps from 0.46 to 0.65 (+40%). Full per-step metrics, ablations and
+JEPA experiments are in `RESULTS.md`.
 
 ## Main result on KTH Actions
 
-On KTH the picture is very different. I used a smaller version of the
-Compact model here (translator_hidden=128 instead of 256), which gives
-0.37M params - about 13x smaller than SimVPv2 at 128x128 - and the gap
-with SimVPv2 becomes much narrower:
+KTH tells a very different story. I used a smaller Compact config here
+(translator_hidden=128 instead of 256), which puts it at 0.37M params,
+roughly 13x smaller than SimVPv2 at 128x128. The gap basically
+disappears:
 
 | Horizon | SimVPv2 MSE | Compact MSE | MSE ratio |
 |---------|-------------|-------------|-----------|
@@ -44,35 +39,41 @@ with SimVPv2 becomes much narrower:
 | t=10    | 0.00245     | 0.00324     | 1.32x     |
 | t=20    | 0.00359     | 0.00394     | 1.10x     |
 
-At t=1 the two models give the same MSE. Even at t=20 (after
-autoregressive rolling), the compact model is only about 10% worse.
+Same MSE at t=1, and even after 20 autoregressive steps the Compact
+model is only ~10% behind.
+
+I also tried n_layers=3 on KTH (since it worked so well on MMNIST),
+but it didn't help here. Both Compact configs end up around SSIM
+~0.77. KTH futures are much less multi-modal than MMNIST, so the
+extra compression doesn't really buy anything.
 
 ## Computational efficiency
 
-Single-threaded forward pass, batch_size=1, 64x64 input, on a laptop CPU
-(Intel i7).
+Single-threaded forward pass, batch_size=1, 64x64 input, on a laptop
+CPU (Intel i7):
 
-| Metric          | SimVPv2 | Compact  |
-|-----------------|---------|----------|
-| Parameters      | 4.72M   | 0.98M    |
-| FLOPs           | 1.50G   | 0.46G    |
-| CPU latency     | 25 ms   | 5.9 ms   |
+| Metric        | SimVPv2 | Compact  |
+|---------------|---------|----------|
+| Parameters    | 4.72M   | 0.98M    |
+| FLOPs         | 1.50G   | 0.46G    |
+| CPU latency   | 25 ms   | 5.9 ms   |
 
-The ~4x speedup is consistent across two CPU setups (server Xeon and
-laptop i7), so the gain comes from the model design, not from one
-specific machine.
+I re-ran the benchmark on a different machine (server Xeon) and got a
+similar 4x speedup, so it's not just a quirk of one CPU.
 
-## What is in this repo
+## What's in this repo
 
-- **SimVPv2 baseline** integrated into a clean PyTorch training/eval pipeline
-  (the SimVPv2 model code is taken from OpenSTL with attribution, see below)
-- **Compact latent dynamics model** (`encoder -> latent transition -> decoder`)
-- Multi-step evaluation with **MSE** and **SSIM**
-- Two Moving MNIST setups:
-  - fixed Toronto split
-  - on-the-fly sequence generation
-- Extension to **KTH Actions**
-- Qualitative comparisons and simple efficiency measurements
+- SimVPv2 baseline plugged into a clean PyTorch training/eval pipeline
+  (model code is from OpenSTL with attribution, see below)
+- Compact latent dynamics model (encoder -> latent transition -> decoder)
+- JEPA-style variant of the Compact model, with EMA target encoder
+  and VICReg-style regularization
+- Multi-step evaluation with MSE and SSIM
+- Two Moving MNIST setups: fixed Toronto split and on-the-fly generation
+- Extension to KTH Actions
+- 21 ablation runs (10 Compact + 11 JEPA)
+- Pareto plot of model size vs prediction quality
+- Qualitative figures and a simple efficiency benchmark
 
 ## Project structure
 
@@ -83,19 +84,24 @@ specific machine.
         base.py
         simvpv2/        # baseline (from OpenSTL, see ATTRIBUTION.md)
         compact/        # my compact model
+        compact_jepa/   # JEPA-style variant
       training/
+        trainer.py
+        jepa_trainer.py # JEPA-specific training loop
       evaluation/
     scripts/            # download, train, eval, benchmark scripts
+    ablations/          # JSON results from 21 ablation runs
+      compact/          # 10 Compact ablations
+      jepa/             # 11 JEPA ablations
     data/               # datasets (not committed)
     checkpoints/        # not committed
-    figures/
+    figures/            # qualitative comparisons + Pareto plot
     RESULTS.md
 
 ## How to reproduce
 
 Tested with Python 3.10. Training scripts log to Weights & Biases by
-default. To run them without a W&B account, set `WANDB_MODE=disabled`
-in your environment.
+default; set `WANDB_MODE=disabled` in your env to skip that.
 
 ```bash
 git clone <repo>
@@ -126,83 +132,134 @@ python scripts/eval_compact_kth.py
 
 # Efficiency benchmark
 python scripts/benchmark_efficiency.py
+
+# JEPA-style training
+python scripts/train_jepa_mmnist.py          # default hyperparameters
+python scripts/train_jepa_mmnist_best.py     # best hyperparameters from ablations
+python scripts/eval_jepa_mmnist.py
+
+# Ablations
+python scripts/ablations_compact.py --axis all --n_epochs 100
+python scripts/ablations_jepa.py --axis all --n_epochs 100
+python scripts/generate_pareto_plot.py
+
+# Compact with n_layers=3 (best ablation finding)
+python scripts/train_compact_mmnist_otf_n3.py
+python scripts/eval_final.py    # evaluates both JEPA-best and Compact-n3
 ```
 
-Most training was done on a single H100 GPU through Colab.
+Most of the training was done on a single H100 GPU through Colab.
 
 ## Visual comparison - Moving MNIST
 
 ![Per-step comparison](figures/qualitative_comparison.png)
 
-For 3 fixed test sequences, this figure shows the input frames, ground
-truth, SimVPv2 predictions, and Compact predictions side by side over
+For 3 fixed test sequences, this figure shows input frames, ground
+truth, SimVPv2 predictions and Compact predictions side by side over
 the 10-step horizon (raw intensities, same scale as ground truth).
 
 ![Long-horizon detail](figures/long_horizon_zoom.png)
 
-At t=20, SimVPv2 still keeps clear digit structure, while the Compact
-model becomes very dark. This is not a rendering bug: the Compact model
-regresses toward the mean of the training distribution at long horizons,
-so its outputs have very low amplitude. This matches the SSIM gap
-(0.34 vs 0.75 at t=10 in RESULTS.md) and is what you'd expect from a
-low-capacity model on a benchmark with many possible futures.
+At t=20, SimVPv2 still keeps the digit structure intact while the
+Compact predictions go very dark. It's not a rendering issue: the
+Compact model regresses toward the dataset mean at long horizons, so
+the output amplitude collapses. This is consistent with the SSIM gap
+at t=10 (~0.34 Compact vs ~0.75 SimVPv2 on the OTF split) and is
+basically what happens when you push a small model on a benchmark
+with many possible futures.
 
-To make sure it isn't just collapsing to noise, here are the same
-figures with per-image contrast normalization. You can see the Compact
-predictions still keep a coarse memory of where the digits were:
+To check that the model wasn't just outputting noise, I re-rendered
+the same figures with per-image contrast normalization:
 
 ![Per-step comparison, contrast-normalized](figures/qualitative_comparison_normalized.png)
 
 ![Long-horizon detail, contrast-normalized](figures/long_horizon_zoom_normalized.png)
 
-So the model isn't predicting noise, it just has very low pixel
-amplitude. The normalized view also shows the checkerboard pattern
-typical of ConvTranspose2d (Odena et al. 2016). One natural fix for a
-v2 would be to replace transposed convolutions with Upsample + Conv2d.
-For the regression-to-the-mean issue itself, JEPA-style training in
-latent space looks like the most direct next step.
+The normalized view shows the predictions still hold a coarse memory
+of where the digits were, so the model is actually predicting
+something - the amplitude is just very low. You can also see the
+typical ConvTranspose2d checkerboard artifact (Odena et al. 2016).
+Replacing transposed convs with Upsample + Conv2d would be a clean
+fix for a v2.
+
+For the regression-to-the-mean issue I tried two different things: a
+JEPA-style training scheme (loss in latent space), and a simple
+architectural tweak (n_layers=3). The architectural one worked much
+better, which honestly I wasn't expecting.
+
+## JEPA-style training
+
+The idea was to attack the regression-to-the-mean problem by training
+in latent space instead of pixel space, following the JEPA recipe
+(Assran et al. 2023): online encoder + EMA target encoder, prediction
+loss between latents, VICReg-style anti-collapse term.
+
+I ran 11 ablations to find decent hyperparameters, then retrained the
+best config. It did not beat the pixel-space Compact baseline. Best
+SSIM was 0.39, against 0.46 for Compact n_layers=2 and 0.65 for
+n_layers=3.
+
+A few things I noticed from the ablations:
+
+- The VICReg-style variance regularization actually hurt performance
+  here. The best run had var_coef=0.
+- Higher EMA momentum helped (0.999 > 0.996 > 0.99). The standard
+  recipe seems too reactive for a setup this small.
+- JEPA was designed for large-scale self-supervised pretraining
+  (V-JEPA uses 200M+ params), and I'm running a 0.98M supervised
+  model. That's well outside the regime it was designed for, which
+  is probably part of why it underperformed.
+
+In this setup, changing the architecture mattered more than changing
+the training objective. Pareto plot for all 21 runs:
+
+![Pareto plot of all 21 ablations + main runs](figures/pareto_plot.png)
 
 ## Visual comparison - KTH Actions
 
 ![KTH per-sequence comparison](figures/qualitative_comparison_kth.png)
 
-For 3 high-motion KTH test clips, this figure shows the same side-by-side
-comparison over the 20-step horizon.
+For 3 high-motion KTH test clips, this figure shows the same
+side-by-side comparison over the 20-step horizon.
 
 ![KTH long-horizon detail](figures/long_horizon_zoom_kth.png)
 
-At the last predicted frame (after autoregressive rolling), both models
-still preserve the overall human silhouette. The Compact model is
-softer, but it stays competitive even though it's much smaller.
+At the last predicted frame, both models still preserve the human
+silhouette. The Compact predictions are softer but stay competitive
+even though the model is much smaller.
 
-## Short takeaway
+## Takeaway
 
-The compact model works surprisingly well when motion is smooth and
-fairly predictable (like KTH), but struggles when the future is more
-multi-modal (like Moving MNIST, where two digits move independently).
-In the harder cases, MSE stays acceptable but SSIM drops a lot, which
-shows the model is averaging plausible futures and producing blurrier
-predictions.
+The Compact model works really well on smooth real video (KTH: same
+MSE as SimVPv2 at t=1, within 10% at t=20, with ~13x fewer params),
+but struggles on synthetic multi-modal benchmarks like Moving MNIST,
+where it blurs toward the mean at long horizons.
+
+On MMNIST, the simple n_layers 2 -> 3 tweak recovered 40% of the SSIM
+gap. JEPA-style training didn't help. The same tweak did not transfer
+to KTH, so the sweet spot really depends on the dataset.
 
 ## Attribution
 
-The SimVPv2 model code (with the gSTA token-mixer) is taken from the
-OpenSTL benchmark by Tan et al. (2023), under their Apache 2.0
-license. See `ATTRIBUTION.md` for details. Everything else
-(datasets, training pipeline, compact model, evaluation, benchmark
-scripts, figures) is mine.
+The SimVPv2 model code (with the gSTA token-mixer) comes from the
+OpenSTL benchmark by Tan et al. (2023), Apache 2.0. See
+`ATTRIBUTION.md`. Everything else - datasets, training pipeline,
+Compact model, evaluation, benchmark scripts, figures - is mine.
 
 ## Notes
 
-This is a focused benchmark, not an exhaustive survey. I tried to keep
-the codebase short and reproducible while still making the comparison
+This is meant to be a focused benchmark, not an exhaustive survey.
+I tried to keep the codebase short while making the comparison
 meaningful.
 
 A few natural next steps:
 
-- testing on more complex datasets (UCF-101, BAIR Robot Pushing)
-- conditioning on actions / control inputs for a more world-model-like
-  setup
-- trying JEPA-style training in latent space, which would directly
-  address the regression-to-the-mean blur on Moving MNIST
-- pushing the compact model further for embedded or robotics settings
+- INT8 quantization and benchmarking on embedded ARM hardware, to
+  actually validate the embedded deployment claim.
+- Hybrid latent + pixel loss for JEPA. The strict stop-gradient on
+  the auxiliary decoder might be too restrictive; letting the latent
+  predictor and the decoder co-adapt could help.
+- RGB datasets (UCF-101, BAIR Robot Pushing) to check whether the
+  architectural findings transfer beyond grayscale.
+- Action-conditioned video prediction, with control inputs feeding
+  into the latent transition (relevant for drone-style deployment).
