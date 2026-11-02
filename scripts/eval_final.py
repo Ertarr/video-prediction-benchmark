@@ -1,5 +1,6 @@
-"""Eval JEPA optimal + Compact n3 et affiche les métriques côte à côte."""
+"""Evaluate JEPA optimal and Compact n_layers=3, print them next to the other runs."""
 import sys
+import json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -114,16 +115,21 @@ def main():
     mse_compact, ssim_compact = eval_compact_n3()
     mse_jepa, ssim_jepa = eval_jepa_best()
     
-    # Summary final
+    # Final summary, the other rows come from scripts/reevaluate_checkpoints.py
+    reeval = json.loads(Path("results/reeval_mmnist.json").read_text())
+    avg = lambda name, key: sum(reeval[name][key]) / len(reeval[name][key])
     print("\n" + "=" * 70)
-    print("RÉSUMÉ FINAL — toutes les variantes du projet")
+    print("FINAL SUMMARY: all variants")
     print("=" * 70)
     print(f"{'Model':<40}{'MSE avg':<12}{'SSIM avg':<12}")
     print("-" * 64)
-    print(f"{'SimVPv2 (4.72M, ref)':<40}{0.0168:<12.4f}{0.84:<12.4f}")
-    print(f"{'Compact main (0.98M, n_layers=2)':<40}{0.0316:<12.4f}{0.46:<12.4f}")
+    for label, name in [("SimVPv2 (4.72M, ref)", "simvpv2-mmnist-otf"),
+                        ("Compact main (0.98M, n_layers=2)", "compact-mmnist-otf")]:
+        print(f"{label:<40}{avg(name, 'test_mse_per_step'):<12.4f}"
+              f"{avg(name, 'test_ssim_per_step'):<12.4f}")
     print(f"{'Compact n_layers=3 (0.99M, 200ep)':<40}{sum(mse_compact)/len(mse_compact):<12.4f}{sum(ssim_compact)/len(ssim_compact):<12.4f}")
-    print(f"{'JEPA defaults (0.98M, 200ep)':<40}{0.0356:<12.4f}{0.30:<12.4f}")
+    print(f"{'JEPA defaults (0.98M, 200ep)':<40}{avg('jepa-mmnist-otf', 'test_mse_per_step'):<12.4f}"
+          f"{avg('jepa-mmnist-otf', 'test_ssim_per_step'):<12.4f}")
     print(f"{'JEPA optimal (0.98M, 200ep)':<40}{sum(mse_jepa)/len(mse_jepa):<12.4f}{sum(ssim_jepa)/len(ssim_jepa):<12.4f}")
 
 

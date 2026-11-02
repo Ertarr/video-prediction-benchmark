@@ -1,0 +1,16 @@
+{
+  "run_name": "jepa-abl-decoder_coef=0.0",
+  "hparams": {
+    "ema_momentum": 0.996,
+    "var_coef": 1.0,
+    "cov_coef": 0.04,
+    "decoder_coef": 0.0
+  },
+  "n_params": 937664,
+  "n_params_M": 0.937664,
+  "best_val_loss": 0.11383532965555787,
+  "best_epoch": 62,
+  "source": "rebuilt from the checkpoint by scripts/reevaluate_checkpoints.py",
+  "test_mse_per_step": null,
+  "test_ssim_per_step": null
+}

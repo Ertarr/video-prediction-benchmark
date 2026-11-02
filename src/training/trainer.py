@@ -116,10 +116,14 @@ def train(
     train_loader: DataLoader,
     val_loader: DataLoader,
     run_name: str = "simvpv2-mmnist",
+    criterion: nn.Module = None,
 ) -> dict:
     """
     Full training loop with W&B logging, checkpointing, and cosine LR schedule.
-    
+
+    criterion defaults to MSE (Phase 6 tries L1).
+    Resumes from last.pt if it exists (Colab disconnects).
+
     Returns:
         dict with best_val_loss and best_epoch.
     """
@@ -140,8 +144,9 @@ def train(
         optimizer, 
         T_max=cfg.n_epochs,
     )
-    criterion = nn.MSELoss()
-    
+    if criterion is None:
+        criterion = nn.MSELoss()
+
     # W&B init. The mode is read from the WANDB_MODE environment variable
     # (set WANDB_MODE=disabled to skip W&B logging entirely).
     wandb.init(
@@ -158,8 +163,21 @@ def train(
     # Training loop
     best_val_loss = float("inf")
     best_epoch = 0
-    
-    for epoch in range(cfg.n_epochs):
+    start_epoch = 0
+
+    last_path = ckpt_dir / "last.pt"
+    if last_path.exists():
+        last = torch.load(last_path, map_location=device, weights_only=True)
+        model.load_state_dict(last["model_state_dict"])
+        optimizer.load_state_dict(last["optimizer_state_dict"])
+        scheduler.load_state_dict(last["scheduler_state_dict"])
+        # same shuffling as an uninterrupted run
+        torch.set_rng_state(last["rng_state"].cpu())
+        start_epoch = last["epoch"] + 1
+        best_val_loss, best_epoch = last["best_val_loss"], last["best_epoch"]
+        print(f"Resuming after epoch {start_epoch}/{cfg.n_epochs}")
+
+    for epoch in range(start_epoch, cfg.n_epochs):
         train_loss = train_one_epoch(
             model, train_loader, optimizer, criterion, 
             device, epoch, cfg.log_every_n_steps,
@@ -185,11 +203,23 @@ def train(
             best_val_loss = val_loss
             best_epoch = epoch
             save_checkpoint(
-                model, optimizer, epoch, val_loss, 
+                model, optimizer, epoch, val_loss,
                 ckpt_dir / "best.pt",
             )
-        
-    
+
+        # written to a temporary file first, so a disconnect during the
+        # save cannot leave a broken last.pt
+        torch.save({
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler.state_dict(),
+            "rng_state": torch.get_rng_state(),
+            "best_val_loss": best_val_loss,
+            "best_epoch": best_epoch,
+        }, ckpt_dir / "last.tmp")
+        (ckpt_dir / "last.tmp").replace(last_path)
+
     wandb.finish()
     print(f"Best val loss: {best_val_loss:.5f} at epoch {best_epoch+1}")
     

@@ -1,6 +1,6 @@
 numpy<2
 matplotlib
-torch>=2.0
+torch>=2.1
 torchvision
 timm
 fvcore
@@ -8,3 +8,4 @@ opencv-python
 scikit-image
 Pillow
 wandb
+pytest

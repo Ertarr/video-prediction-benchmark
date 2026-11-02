@@ -1,10 +1,11 @@
 """
-Generate a Pareto plot summarizing all ablation runs.
+Generate a size vs quality plot summarizing all ablation runs.
 
 Reads JSON summaries from `ablations/compact/` and `ablations/jepa/`,
 plots params vs test MSE on log-x scale, with markers indicating model
-type (Compact / JEPA). Also overlays the Phase 1b "main" Compact and
-SimVPv2 results as reference points.
+type (Compact / JEPA). Also shows the main Compact and SimVPv2 runs and
+the copy-last-frame and black-frame baselines, read from
+results/reeval_mmnist.json.
 
 Output: figures/pareto_plot.png
 """
@@ -16,19 +17,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import matplotlib.pyplot as plt
 
 
-# Phase 1b reference points (from RESULTS.md, OTF eval)
-REFERENCE_POINTS = {
-    'SimVPv2 (Phase 1b)': {
-        'n_params_M': 4.72,
-        'test_mse_avg': 0.01685,
-        'test_ssim_avg': 0.84,
-    },
-    'Compact (Phase 1b)': {
-        'n_params_M': 0.98,
-        'test_mse_avg': 0.02628,
-        'test_ssim_avg': 0.46,
-    },
+REEVAL_PATH = Path("results/reeval_mmnist.json")
+REFERENCE_RUNS = {
+    'SimVPv2 (Phase 1b)': 'simvpv2-mmnist-otf',
+    'Compact (Phase 1b)': 'compact-mmnist-otf',
 }
+
+
+def load_reference_points():
+    """Phase 1b reference points and the copy-last-frame baseline."""
+    reeval = json.loads(REEVAL_PATH.read_text())
+    points = {
+        name: {
+            'n_params_M': reeval[run]['n_params'] / 1e6,
+            'test_mse_avg': reeval[run]['test_mse_avg'],
+            'test_ssim_avg': reeval[run]['test_ssim_avg'],
+        }
+        for name, run in REFERENCE_RUNS.items()
+    }
+    return points, reeval['copy-last-frame'], reeval.get('black-frame')
 
 
 def load_summaries(directory: Path):
@@ -51,7 +58,9 @@ def main():
     
     print(f"Loaded {len(compact_summaries)} Compact runs")
     print(f"Loaded {len(jepa_summaries)} JEPA runs")
-    
+
+    REFERENCE_POINTS, copy_baseline, black_baseline = load_reference_points()
+
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
     # ---- Subplot 1: params vs MSE ----
@@ -81,10 +90,13 @@ def main():
             linewidths=1.5, zorder=10, label=name,
         )
     
+    ax.axhline(copy_baseline['test_mse_avg'], color='gray', linestyle='--',
+               linewidth=1, label='Copy last frame (no model)')
+
     ax.set_xscale('log')
     ax.set_xlabel('Params (M, log scale)', fontsize=11)
     ax.set_ylabel('Test MSE (avg over 10 steps)', fontsize=11)
-    ax.set_title('Pareto: model size vs prediction error', fontsize=12)
+    ax.set_title('Model size vs prediction error', fontsize=12)
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=9, loc='upper right')
     
@@ -112,23 +124,29 @@ def main():
             linewidths=1.5, zorder=10, label=name,
         )
     
+    ax.axhline(copy_baseline['test_ssim_avg'], color='gray', linestyle='--',
+               linewidth=1, label='Copy last frame (no model)')
+    if black_baseline is not None:
+        ax.axhline(black_baseline['test_ssim_avg'], color='gray', linestyle=':',
+                   linewidth=1.5, label='Black frame (no model)')
+
     ax.set_xscale('log')
     ax.set_xlabel('Params (M, log scale)', fontsize=11)
     ax.set_ylabel('Test SSIM (avg over 10 steps)', fontsize=11)
-    ax.set_title('Pareto: model size vs perceptual quality', fontsize=12)
+    ax.set_title('Model size vs SSIM', fontsize=12)
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=9, loc='lower right')
-    
+
     fig.suptitle(
-        'Phase 3+ ablations: Compact and JEPA on Moving MNIST OTF',
+        'Ablations on Moving MNIST OTF (single seed per run)',
         fontsize=13, y=1.02,
     )
     plt.tight_layout()
-    
+
     out = Path("figures/pareto_plot.png")
     out.parent.mkdir(exist_ok=True)
     plt.savefig(out, dpi=200, bbox_inches='tight')
-    print(f"Saved Pareto plot to {out}")
+    print(f"Saved size vs quality plot to {out}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,126 @@
+{
+  "torch_version": "2.14.1+cpu",
+  "backend": "onednn",
+  "convtranspose_int8_check_rel_mse": 1.9487907886505127,
+  "fp32": {
+    "test_mse_avg": 0.02388988509774208,
+    "test_ssim_avg": 0.6453936769477532,
+    "output_gap_rel_mse": 0.0,
+    "weights_mb": 3.952131,
+    "latency_median_ms": 6.51255005504936,
+    "latency_p95_ms": 7.6764500176068395,
+    "quantized_modules": []
+  },
+  "encoder": {
+    "test_mse_avg": 0.02395769003778696,
+    "test_ssim_avg": 0.6471517371998633,
+    "output_gap_rel_mse": 0.004205930470121895,
+    "weights_mb": 3.890061,
+    "latency_median_ms": 7.675400003790855,
+    "latency_p95_ms": 8.979215036379173,
+    "quantized_modules": [
+      "encoder.0:Conv2d",
+      "encoder.3:Conv2d",
+      "encoder.6:Conv2d"
+    ]
+  },
+  "translator": {
+    "test_mse_avg": 0.023912831209599972,
+    "test_ssim_avg": 0.6450585618348752,
+    "output_gap_rel_mse": 0.0012726944238568999,
+    "weights_mb": 1.223373,
+    "latency_median_ms": 7.105550030246377,
+    "latency_p95_ms": 8.682009985204784,
+    "quantized_modules": [
+      "translator.0:Conv2d",
+      "translator.2:Conv2d",
+      "translator.4:Conv2d"
+    ]
+  },
+  "decoder": {
+    "test_mse_avg": 0.02390068070963025,
+    "test_ssim_avg": 0.6054176705069344,
+    "output_gap_rel_mse": 0.0008103959706939566,
+    "weights_mb": 3.953969,
+    "latency_median_ms": 8.54065001476556,
+    "latency_p95_ms": 9.22675495967269,
+    "quantized_modules": [
+      "decoder.9:Conv2d"
+    ]
+  },
+  "all": {
+    "test_mse_avg": 0.023992933705449103,
+    "test_ssim_avg": 0.6061772110757004,
+    "output_gap_rel_mse": 0.006298944791570225,
+    "weights_mb": 1.162757,
+    "latency_median_ms": 9.197650069836527,
+    "latency_p95_ms": 11.45846997387707,
+    "quantized_modules": [
+      "encoder.0:Conv2d",
+      "encoder.3:Conv2d",
+      "encoder.6:Conv2d",
+      "translator.0:Conv2d",
+      "translator.2:Conv2d",
+      "translator.4:Conv2d",
+      "decoder.9:Conv2d"
+    ]
+  },
+  "per_layer": {
+    "encoder[0] Conv2d (16, 1, 3, 3)": {
+      "params": 160,
+      "output_gap_rel_mse": 0.0005756862048204827,
+      "test_mse_avg": 0.023916337452828885,
+      "quantized_modules": [
+        "encoder.0:Conv2d"
+      ]
+    },
+    "encoder[3] Conv2d (32, 16, 3, 3)": {
+      "params": 4640,
+      "output_gap_rel_mse": 0.0016631213879164668,
+      "test_mse_avg": 0.023912043869495393,
+      "quantized_modules": [
+        "encoder.3:Conv2d"
+      ]
+    },
+    "encoder[6] Conv2d (64, 32, 3, 3)": {
+      "params": 18496,
+      "output_gap_rel_mse": 0.0019346266502685225,
+      "test_mse_avg": 0.023918308690190314,
+      "quantized_modules": [
+        "encoder.6:Conv2d"
+      ]
+    },
+    "translator[0] Conv2d (256, 640, 1, 1)": {
+      "params": 164096,
+      "output_gap_rel_mse": 0.00037601252734711764,
+      "test_mse_avg": 0.023899203259497882,
+      "quantized_modules": [
+        "translator.0:Conv2d"
+      ]
+    },
+    "translator[2] Conv2d (256, 256, 3, 3)": {
+      "params": 590080,
+      "output_gap_rel_mse": 0.0005454535437373362,
+      "test_mse_avg": 0.023903921619057654,
+      "quantized_modules": [
+        "translator.2:Conv2d"
+      ]
+    },
+    "translator[4] Conv2d (640, 256, 1, 1)": {
+      "params": 164480,
+      "output_gap_rel_mse": 0.0003864622503803404,
+      "test_mse_avg": 0.023897355049848558,
+      "quantized_modules": [
+        "translator.4:Conv2d"
+      ]
+    },
+    "decoder[9] Conv2d (1, 8, 1, 1)": {
+      "params": 9,
+      "output_gap_rel_mse": 0.0008103959706939566,
+      "test_mse_avg": 0.023900679871439935,
+      "quantized_modules": [
+        "decoder.9:Conv2d"
+      ]
+    }
+  }
+}

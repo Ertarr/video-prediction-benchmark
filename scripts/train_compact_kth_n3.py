@@ -12,7 +12,7 @@ from src.training.trainer import train
 
 
 def main():
-    cfg = KTHConfig()  # Toutes les valeurs par défaut
+    cfg = KTHConfig()  # all defaults
 
     train_ds = KTHActions(
         cfg.frames_root, cfg.train_clips,
@@ -40,12 +40,12 @@ def main():
         target_len=cfg.target_len,
         in_shape=(cfg.input_len, cfg.n_channels, cfg.image_size, cfg.image_size),
         latent_dim=64,
-        translator_hidden=128,   # défaut KTH (vs 256 MMNIST)
-        n_layers=3,              # KEY: vs 2 par défaut
+        translator_hidden=128,   # KTH default (256 on MMNIST)
+        n_layers=3,              # instead of 2
     )
 
     result = train(model, cfg, train_loader, val_loader, run_name="compact-kth-n3")
-    print(f"\n✅ Done: {result}")
+    print(f"\nDone: {result}")
 
 
 if __name__ == "__main__":

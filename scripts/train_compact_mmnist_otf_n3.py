@@ -46,7 +46,7 @@ def main():
     )
 
     result = train(model, cfg, train_loader, val_loader, run_name="compact-mmnist-otf-n3")
-    print(f"\n✅ Done: {result}")
+    print(f"\nDone: {result}")
 
 
 if __name__ == "__main__":

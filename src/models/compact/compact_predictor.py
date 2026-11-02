@@ -54,18 +54,22 @@ class LatentTransition(nn.Module):
     that mix temporal information through the channel dimension, then 
     reshapes back.
     """
-    def __init__(self, n_steps: int, latent_dim: int, hidden_dim: int = 128):
+    def __init__(self, n_steps: int, latent_dim: int, hidden_dim: int = 128,
+                 dilation: int = 1):
         super().__init__()
         self.n_steps = n_steps
         self.latent_dim = latent_dim
         in_channels = n_steps * latent_dim   # ex: 10 * 64 = 640
-        
+
         # 1x1 -> 3x3 -> 1x1 bottleneck: drastically reduces params while
-        # still keeping a 3x3 spatial mixing in the middle
+        # still keeping a 3x3 spatial mixing in the middle.
+        # dilation > 1 spreads the 3x3 taps apart: same params and FLOPs,
+        # but the conv reaches further in the latent (Phase 6).
         self.layers = nn.Sequential(
             nn.Conv2d(in_channels, hidden_dim, kernel_size=1),
             nn.GELU(),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1),
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3,
+                      padding=dilation, dilation=dilation),
             nn.GELU(),
             nn.Conv2d(hidden_dim, in_channels, kernel_size=1),
             nn.GELU(),
@@ -122,15 +126,24 @@ class CompactPredictor(VideoPredictor):
         latent_dim: int = 64,
         translator_hidden: int = 128,
         n_layers: int = 2,
+        translator_dilation: int = 1,
+        skip: bool = False,
     ):
         super().__init__(input_len=input_len, target_len=target_len)
         T, C, H, W = in_shape
-        
+        self.n_layers = n_layers
+        # skip=True copies SimVP's skip connection (Phase 6): the output of
+        # the first encoder block is added back before the last decoder
+        # block. Frame i of the output gets the features of input frame i,
+        # like in SimVP. No extra parameters.
+        self.skip = skip
+
         self.encoder = CompactEncoder(
             in_channels=C, latent_dim=latent_dim, n_layers=n_layers,
         )
         self.transition = LatentTransition(
             n_steps=T, latent_dim=latent_dim, hidden_dim=translator_hidden,
+            dilation=translator_dilation,
         )
         self.decoder = CompactDecoder(
             latent_dim=latent_dim, out_channels=C, n_layers=n_layers,
@@ -167,11 +180,23 @@ class CompactPredictor(VideoPredictor):
         """One pass of encoder -> transition -> decoder, T_out = T_in."""
         B, T, C, H, W = x.shape
         x_flat = x.reshape(B * T, C, H, W)
-        latents_flat = self.encoder(x_flat)
+        if self.skip:
+            # each encoder / decoder block is (conv, GroupNorm, GELU)
+            enc1 = self.encoder.layers[:3](x_flat)
+            latents_flat = self.encoder.layers[3:](enc1)
+        else:
+            latents_flat = self.encoder(x_flat)
         _, latent_dim, H_, W_ = latents_flat.shape
         latents = latents_flat.reshape(B, T, latent_dim, H_, W_)
         latents = self.transition(latents)
         latents_flat = latents.reshape(B * T, latent_dim, H_, W_)
-        pred = self.decoder(latents_flat)
+        if self.skip:
+            # the decoder block before the last one outputs the same shape
+            # as the first encoder block (latent_dim / 2^(n-1) channels, H/2)
+            k = 3 * (self.n_layers - 1)
+            hid = self.decoder.layers[:k](latents_flat)
+            pred = self.decoder.layers[k:](hid + enc1)
+        else:
+            pred = self.decoder(latents_flat)
         pred = pred.reshape(B, T, C, H, W)
         return pred

@@ -1,0 +1,194 @@
+{
+  "window": {
+    "10": {
+      "step_median_ms": 6.381700048223138,
+      "step_p95_ms": 7.935684971744195,
+      "step_gflops": 0.324370432,
+      "memory_bytes": 0,
+      "window_bytes": 81920,
+      "read_observed_ms": 2.045899978838861
+    },
+    "20": {
+      "step_median_ms": 6.861750036478043,
+      "step_p95_ms": 8.386390004307032,
+      "step_gflops": 0.324370432,
+      "memory_bytes": 0,
+      "window_bytes": 81920,
+      "read_observed_ms": 4.237300017848611
+    },
+    "50": {
+      "step_median_ms": 6.923999928403646,
+      "step_p95_ms": 7.884740008739754,
+      "step_gflops": 0.324370432,
+      "memory_bytes": 0,
+      "window_bytes": 81920,
+      "read_observed_ms": 10.380399995483458
+    },
+    "100": {
+      "step_median_ms": 6.499149953015149,
+      "step_p95_ms": 7.390730024781078,
+      "step_gflops": 0.324370432,
+      "memory_bytes": 0,
+      "window_bytes": 81920,
+      "read_observed_ms": 19.293999997898936
+    },
+    "200": {
+      "step_median_ms": 6.406800064723939,
+      "step_p95_ms": 7.4068249843548974,
+      "step_gflops": 0.324370432,
+      "memory_bytes": 0,
+      "window_bytes": 81920,
+      "read_observed_ms": 37.742899963632226
+    },
+    "400": {
+      "step_median_ms": 7.772749988362193,
+      "step_p95_ms": 9.547775000100954,
+      "step_gflops": 0.324370432,
+      "memory_bytes": 0,
+      "window_bytes": 81920,
+      "read_observed_ms": 99.57640001084656
+    }
+  },
+  "rmt": {
+    "10": {
+      "step_median_ms": 7.536900055129081,
+      "step_p95_ms": 8.743994979886338,
+      "step_gflops": 0.360546304,
+      "memory_bytes": 8192,
+      "window_bytes": 81920,
+      "read_observed_ms": 2.142300014384091
+    },
+    "20": {
+      "step_median_ms": 7.573800045065582,
+      "step_p95_ms": 10.126870038220654,
+      "step_gflops": 0.360546304,
+      "memory_bytes": 8192,
+      "window_bytes": 81920,
+      "read_observed_ms": 11.3893001107499
+    },
+    "50": {
+      "step_median_ms": 8.370750001631677,
+      "step_p95_ms": 11.226789985084904,
+      "step_gflops": 0.360546304,
+      "memory_bytes": 8192,
+      "window_bytes": 81920,
+      "read_observed_ms": 40.685700019821525
+    },
+    "100": {
+      "step_median_ms": 7.40864995168522,
+      "step_p95_ms": 9.813285077689216,
+      "step_gflops": 0.360546304,
+      "memory_bytes": 8192,
+      "window_bytes": 81920,
+      "read_observed_ms": 72.68359989393502
+    },
+    "200": {
+      "step_median_ms": 7.232850068248808,
+      "step_p95_ms": 10.03625001758337,
+      "step_gflops": 0.360546304,
+      "memory_bytes": 8192,
+      "window_bytes": 81920,
+      "read_observed_ms": 155.86509997956455
+    },
+    "400": {
+      "step_median_ms": 7.480950036551803,
+      "step_p95_ms": 10.209249978652219,
+      "step_gflops": 0.360546304,
+      "memory_bytes": 8192,
+      "window_bytes": 81920,
+      "read_observed_ms": 382.38229998387396
+    }
+  },
+  "knn": {
+    "10": {
+      "step_median_ms": 7.000000041443855,
+      "step_p95_ms": 9.720380016369742,
+      "step_gflops": 0.324370432,
+      "memory_bytes": 0,
+      "window_bytes": 81920,
+      "read_observed_ms": 2.0487000001594424
+    },
+    "20": {
+      "step_median_ms": 10.299050016328692,
+      "step_p95_ms": 12.196339992806315,
+      "step_gflops": 0.337477632,
+      "memory_bytes": 163840,
+      "window_bytes": 81920,
+      "read_observed_ms": 8.0464999191463
+    },
+    "50": {
+      "step_median_ms": 16.350749938283116,
+      "step_p95_ms": 18.59523498569615,
+      "step_gflops": 0.376799232,
+      "memory_bytes": 655360,
+      "window_bytes": 81920,
+      "read_observed_ms": 20.047200028784573
+    },
+    "100": {
+      "step_median_ms": 29.834500048309565,
+      "step_p95_ms": 31.088309944607317,
+      "step_gflops": 0.442335232,
+      "memory_bytes": 1474560,
+      "window_bytes": 81920,
+      "read_observed_ms": 45.660799951292574
+    },
+    "200": {
+      "step_median_ms": 28.667650010902435,
+      "step_p95_ms": 35.396774916443974,
+      "step_gflops": 0.573407232,
+      "memory_bytes": 3112960,
+      "window_bytes": 81920,
+      "read_observed_ms": 97.12920000310987
+    },
+    "400": {
+      "step_median_ms": 56.70489993644878,
+      "step_p95_ms": 71.62405496346764,
+      "step_gflops": 0.835551232,
+      "memory_bytes": 6389760,
+      "window_bytes": 81920,
+      "read_observed_ms": 231.70689994003624
+    }
+  },
+  "full": {
+    "10": {
+      "step_median_ms": 6.809750047978014,
+      "step_p95_ms": 7.872929982841015,
+      "step_gflops": 0.324370432,
+      "memory_bytes": 0,
+      "window_bytes": 81920,
+      "read_observed_ms": 2.3195999674499035
+    },
+    "20": {
+      "step_median_ms": 13.998500013258308,
+      "step_p95_ms": 21.797794959275045,
+      "step_gflops": 0.733315072,
+      "memory_bytes": 0,
+      "window_bytes": 163840,
+      "read_observed_ms": 4.263100097887218
+    },
+    "50": {
+      "step_median_ms": 56.93254998186603,
+      "step_p95_ms": 68.74174497788772,
+      "step_gflops": 2.589294592,
+      "memory_bytes": 0,
+      "window_bytes": 409600,
+      "read_observed_ms": 9.042999939993024
+    },
+    "100": {
+      "step_median_ms": 165.85274995304644,
+      "step_p95_ms": 240.91106504201883,
+      "step_gflops": 7.779745792,
+      "memory_bytes": 0,
+      "window_bytes": 819200,
+      "read_observed_ms": 19.043500069528818
+    },
+    "200": {
+      "step_median_ms": 733.3985499572009,
+      "step_p95_ms": 849.3675000092479,
+      "step_gflops": 26.024968192,
+      "memory_bytes": 0,
+      "window_bytes": 1638400,
+      "read_observed_ms": 33.69149996433407
+    }
+  }
+}
